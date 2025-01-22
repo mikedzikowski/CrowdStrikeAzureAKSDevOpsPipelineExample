@@ -1,0 +1,146 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+# variables:
+#  - name: fcsClientId
+#    value: The client ID for the Falcon CrowdStrike pull script.
+#  - name: fscSecret
+#    value: The secret for the Falcon CrowdStrike pull script.
+#  - name: fcsCID
+#    value: The CrowdStrike CID.
+#  - name: azureSubscription
+#    value: The Azure subscription ID.
+#  - name: clusterName
+#    value: The name of the AKS (Azure Kubernetes Service) cluster.
+#  - name: clusterResourceGroup
+#    value: The resource group name for the AKS cluster.
+#  - name: sensorRegistry
+#    value: The registry URL for the Falcon sensor.
+#  - name: kacRegistry
+#    value: The registry URL for the Falcon KAC (Kubernetes Admission Controller).
+#  - name: iarRegistry
+#    value: The registry URL for the Falcon Image Analyzer.
+
+
+variables:
+ - name: fcsClientId
+   value: 00000000000000000000000000000000
+ - name: fscSecret
+   value: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+ - name: fcsCID
+   value: 00000000000000000000000000000000-00
+ - name: azureSubscription
+   value: 00000000-0000-0000-0000-000000000000
+ - name: clusterName
+   value: aks-cluster-eu-example-01
+ - name: clusterResourceGroup
+   value: rg-aks-eu-example-01
+ - name: sensorRegistry
+   value: registry.crowdstrike.com/falcon-sensor/us-1/release/falcon-sensor
+ - name: kacRegistry
+   value: registry.crowdstrike.com/falcon-kac/us-1/release/falcon-kac
+ - name: iarRegistry
+   value: registry.crowdstrike.com/falcon-imageanalyzer/us-1/release/falcon-imageanalyzer
+
+steps:
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
+      chmod 777 ./falcon-container-sensor-pull.sh
+      export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
+      export LATEST_SENSOR_TAG=$(echo "$SENSOR" | jq -r '.tags | sort | last')
+      export KAC=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-kac --list-tags)
+      export LATEST_KAC_TAG=$(echo "$KAC" | jq -r '.tags | sort | last')
+      echo $LATEST_SENSOR_TAG
+      echo $LATEST_KAC_TAG
+      export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --get-pull-token)
+      echo "##vso[task.setvariable variable=PULLTOKEN;isOutput=true]$PULLTOKEN"
+  displayName: 'falcon'
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
+      chmod 777 ./falcon-container-sensor-pull.sh
+      export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
+      export LATEST_SENSOR_TAG=$(echo "$SENSOR" | jq -r '.tags | sort | last')
+      export KAC=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-kac --list-tags)
+      export LATEST_KAC_TAG=$(echo "$KAC" | jq -r '.tags | sort | last')
+      echo $LATEST_SENSOR_TAG
+      echo $LATEST_KAC_TAG
+      export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --get-pull-token)
+      az account set --subscription $AZURESUBSCRIPTION
+      az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
+       helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
+       helm repo update
+       helm install falcon-kac crowdstrike/falcon-kac \
+      -n falcon-kac --create-namespace \
+      --set falcon.cid=$FCSCID \
+      --set image.repository=$KACREGISTRY \
+      --set image.tag=$LATEST_KAC_TAG \
+      --set image.registryConfigJSON=$PULLTOKEN
+  displayName: 'Deploy CrowdStrike Kubernetes Admisson Controller to Azure Kubernetes Service Cluster'
+  condition: eq(variables.deployKAC, true)
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
+      chmod 777 ./falcon-container-sensor-pull.sh
+      export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
+      export LATEST_SENSOR_TAG=$(echo "$SENSOR" | jq -r '.tags | sort | last')
+      export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --get-pull-token)
+      az account set --subscription $AZURESUBSCRIPTION
+      az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
+      helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
+      helm repo update
+      helm upgrade --install falcon-helm crowdstrike/falcon-sensor \
+      -n falcon-system --create-namespace \
+      --set falcon.cid=$FCSCID \
+      --set node.image.repository=$SENSORREGISTRY \
+      --set node.image.tag=$LATEST_SENSOR_TAG \
+      --set node.image.registryConfigJSON=$PULLTOKEN
+  displayName: 'Deploy Falcon Sensor to Azure Kubernetes Service Cluster'
+  condition: eq(variables.deploySensor, true)
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
+      chmod 777 ./falcon-container-sensor-pull.sh
+      export IAR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-imageanalyzer --list-tags)
+      export LATEST_IAR_TAG=$(echo "$IAR" | jq -r '.tags | sort | last')
+      export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-imageanalyzer --get-pull-token)
+      az account set --subscription $AZURESUBSCRIPTION
+      az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
+      helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
+      helm repo update
+      helm upgrade --install iar crowdstrike/falcon-image-analyzer -n falcon-image-analyzer --create-namespace \
+      --set deployment.enabled=true \
+      --set crowdstrikeConfig.clusterName=$CLUSTERNAME \
+      --set crowdstrikeConfig.clientID=$FCSCLIENTID \
+      --set crowdstrikeConfig.clientSecret=$FSCSECRET \
+      --set crowdstrikeConfig.agentRegion=us-1 \
+      --set image.registryConfigJSON=$PULLTOKEN \
+      --set image.repository=$IARREGISTRY --set image.tag=$LATEST_IAR_TAG \
+      --set crowdstrikeConfig.cid=$FCSCID
+  displayName: 'Deploy Image Assessment at Runtime to Azure Kubernetes Service Cluster'
+  condition: eq(variables.deployIAR,true)
+
+
