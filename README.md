@@ -6,7 +6,7 @@ The pipeline uses Az CLI and Helm charts to deploy the utilities. For more infor
 
 [Falcon Helm](https://github.com/CrowdStrike/falcon-helm/tree/main)
 
-The required zAzure DevOps service connections, configuration and AKS setup are not covered in this brief demo example.
+The required Azure DevOps service connections, configuration and AKS setup are not covered in this brief demo example.
 
 
 
