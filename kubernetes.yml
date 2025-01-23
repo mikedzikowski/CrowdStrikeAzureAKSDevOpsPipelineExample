@@ -52,6 +52,20 @@ steps:
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
+      az aks create \
+          --resource-group $CLUSTERRESOURCEGROUP \
+          --name $CLUSTERNAME \
+          --node-count 2 \
+          --generate-ssh-keys
+  displayName: 'Deply AKS Cluster'
+  condition: eq(variables.deployNewCluster, true)
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
       curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
       chmod 777 ./falcon-container-sensor-pull.sh
       export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
