@@ -55,7 +55,7 @@ steps:
       az aks create \
           --resource-group $CLUSTERRESOURCEGROUP \
           --name $CLUSTERNAME \
-          --node-count 2 \
+          --node-count 3 \
           --generate-ssh-keys
   displayName: 'Deply AKS Cluster'
   condition: eq(variables.deployNewCluster, true)
