@@ -76,7 +76,21 @@ steps:
       echo $LATEST_KAC_TAG
       export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --get-pull-token)
       echo "##vso[task.setvariable variable=PULLTOKEN;isOutput=true]$PULLTOKEN"
-  displayName: 'falcon'
+  displayName: 'Gather CrowdStrike Falcon Cloud Security Information'
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az account set --subscription $AZURESUBSCRIPTION
+      az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
+      kubectl apply -f  https://raw.githubusercontent.com/crowdstrike/vulnapp/main/vulnerable.example.yaml
+      sleep 3m
+      watch -n 1 echo 'http://$(kubectl get service vulnerable-example-com  -o yaml -o=jsonpath="{.status.loadBalancer.ingress[0].ip}")/'
+  displayName: 'Deploy CrowdStrike Vulnapp'
+  condition: eq(variables.deployVulnapp, true)
 
 - task: AzureCLI@2
   inputs:
