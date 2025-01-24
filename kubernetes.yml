@@ -87,8 +87,8 @@ steps:
       az account set --subscription $AZURESUBSCRIPTION
       az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
       kubectl apply -f  https://raw.githubusercontent.com/crowdstrike/vulnapp/main/vulnerable.example.yaml
-      sleep 3m
-      watch -n 1 echo 'http://$(kubectl get service vulnerable-example-com  -o yaml -o=jsonpath="{.status.loadBalancer.ingress[0].ip}")/'
+      #sleep 3m
+      #watch -n 1 echo 'http://$(kubectl get service vulnerable-example-com  -o yaml -o=jsonpath="{.status.loadBalancer.ingress[0].ip}")/'
   displayName: 'Deploy CrowdStrike Vulnapp'
   condition: eq(variables.deployVulnapp, true)
 
