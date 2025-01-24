@@ -57,7 +57,7 @@ steps:
           --name $CLUSTERNAME \
           --node-count 3 \
           --generate-ssh-keys
-  displayName: 'Deply AKS Cluster'
+  displayName: 'Deploy AKS Cluster'
   condition: eq(variables.deployNewCluster, true)
 
 - task: AzureCLI@2
