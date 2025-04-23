@@ -6,9 +6,11 @@ The pipeline uses Az CLI and Helm charts to deploy the utilities. For more infor
 
 [Falcon Helm](https://github.com/CrowdStrike/falcon-helm/tree/main)
 
-The required Azure DevOps service connections, configuration and AKS setup are not covered in this brief demo example.
+Pre-Reqs:
 
-# Pipeline Variables Reference Guide
+The required Azure DevOps service connections, configuration and are not covered in this brief demo example. The pipeline assumes there is already a resource group deployed in Azure.
+
+## Pipeline Variables Reference Guide
 
 This document provides details about the variables used in the CrowdStrike Falcon deployment pipeline.
 
