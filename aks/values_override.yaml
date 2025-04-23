@@ -1,0 +1,110 @@
+crowdstrikeConfig:
+  clientID: "<FALCON_CLIENT_ID>"
+  clientSecret: "<FALCON_CLIENT_SECRET>"
+  
+executor:
+  image:
+    registry: "<ACR_REGISTRY>"
+    repository: "falcon-registryassessmentexecutor"
+    tag: "1.4.1"
+    registryConfigJSON: "<BASE64_ENCODED_DOCKER_CONFIG>"
+  dbStorage:
+    create: true
+    size: "10Gi"
+    accessModes:
+      - "ReadWriteOnce"
+    storageClass: "default"
+  assessmentStorage:
+    type: "PVC"
+    create: true
+    storageClass: "default"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+jobController:
+  image:
+    registry: "<ACR_REGISTRY>"
+    repository: "falcon-jobcontroller"
+    tag: "1.4.1"
+    registryConfigJSON: "<BASE64_ENCODED_DOCKER_CONFIG>"
+  dbStorage:
+    create: true
+    storageClass: "default"
+    size: "100Gi"
+    accessModes:
+      - "ReadWriteOnce"
+  resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+registryConfigs:
+  - type: acr
+    credentials:
+      username: "<DOCKER_USERNAME>"
+      password: "<DOCKER_PASSWORD>"
+    allowedRepositories: "<ALLOWED_REPOSITORIES>"
+    port: "443"
+    host: "https://<ACR_REGISTRY>"
+    cronSchedule: "* * * * *"
+crowdstrikeConfig:
+  clientID: "<FALCON_CLIENT_ID>"
+  clientSecret: "<FALCON_CLIENT_SECRET>"
+  
+executor:
+  image:
+    registry: "<ACR_REGISTRY>"
+    repository: "falcon-registryassessmentexecutor"
+    tag: "1.4.1"
+    registryConfigJSON: "<BASE64_ENCODED_DOCKER_CONFIG>"
+  dbStorage:
+    create: true
+    size: "10Gi"
+    accessModes:
+      - "ReadWriteOnce"
+    storageClass: "default"
+  assessmentStorage:
+    type: "PVC"
+    create: true
+    storageClass: "default"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
+jobController:
+  image:
+    registry: "<ACR_REGISTRY>"
+    repository: "falcon-jobcontroller"
+    tag: "1.4.1"
+    registryConfigJSON: "<BASE64_ENCODED_DOCKER_CONFIG>"
+  dbStorage:
+    create: true
+    storageClass: "default"
+    size: "100Gi"
+    accessModes:
+      - "ReadWriteOnce"
+  resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 1
+        memory: 1Gi
+registryConfigs:
+  - type: acr
+    credentials:
+      username: "<DOCKER_USERNAME>"
+      password: "<DOCKER_PASSWORD>"
+    allowedRepositories: "<ALLOWED_REPOSITORIES>"
+    port: "443"
+    host: "https://<ACR_REGISTRY>"
+    cronSchedule: "* * * * *"
