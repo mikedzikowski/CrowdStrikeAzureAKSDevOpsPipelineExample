@@ -1,71 +1,71 @@
 trigger:
-- main
+- none
 
 pool:
   vmImage: 'ubuntu-latest'
 
-# variables:
-#  - name: fcsClientId
-#    value: The client ID for the Falcon CrowdStrike pull script.
-#  - name: fscSecret
-#    value: The secret for the Falcon CrowdStrike pull script.
-#  - name: fcsCID
-#    value: The CrowdStrike CID.
-#  - name: azureSubscription
-#    value: The Azure subscription ID.
-#  - name: clusterName
-#    value: The name of the AKS (Azure Kubernetes Service) cluster.
-#  - name: clusterResourceGroup
-#    value: The resource group name for the AKS cluster.
-#  - name: sensorRegistry
-#    value: The registry URL for the Falcon sensor.
-#  - name: kacRegistry
-#    value: The registry URL for the Falcon KAC (Kubernetes Admission Controller).
-#  - name: iarRegistry
-#    value: The registry URL for the Falcon Image Analyzer.
-
-
 variables:
+ # Falcon Client ID
  - name: fcsClientId
-   value: 00000000000000000000000000000000
+   value: '<FALCON_CLIENT_ID>'
+ # Falcon Secret
  - name: fscSecret
-   value: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+   value: '<FALCON_SECRET>'
  - name: fcsCID
-   value: 00000000000000000000000000000000-00
+   value: '<FALCON_CID>'
  - name: azureSubscription
-   value: 00000000-0000-0000-0000-000000000000
+   value: '<AZURE_SUBSCRIPTION_ID>'
  - name: clusterName
-   value: aks-cluster-eu-example-01
+   value: 'aks-cluster'
  - name: clusterResourceGroup
-   value: rg-aks-eu-example-01
+   value: 'rg-example-eu1'
  - name: sensorRegistry
-   value: registry.crowdstrike.com/falcon-sensor/us-1/release/falcon-sensor
+   value: 'registry.crowdstrike.com/falcon-sensor/us-1/release/falcon-sensor'
  - name: kacRegistry
-   value: registry.crowdstrike.com/falcon-kac/us-1/release/falcon-kac
+   value: 'registry.crowdstrike.com/falcon-kac/us-1/release/falcon-kac'
  - name: iarRegistry
-   value: registry.crowdstrike.com/falcon-imageanalyzer/us-1/release/falcon-imageanalyzer
+   value: 'registry.crowdstrike.com/falcon-imageanalyzer/us-1/release/falcon-imageanalyzer'
+ - name: acrRegistry
+   value: 'contoso.azurecr.io'
+ - name: APP_ID
+   value: '<AZURE_APP_ID>'
+ - name: CLIENT_SECRET
+   value: '<AZURE_CLIENT_SECRET>'
+ - name: TENANT_ID
+   value: '<AZURE_TENANT_ID>'
+ - name: SUBSCRIPTION_ID
+   value: '<AZURE_SUBSCRIPTION_ID>'
+ - name: DOCKER_USER
+   value: '<DOCKER_USERNAME>'
+ - name: DOCKER_PASSWORD
+   value: '<DOCKER_PASSWORD>'
+ - name: DOCKER_EMAIL
+   value: '<DOCKER_EMAIL>'
 
 steps:
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      az aks create \
-          --resource-group $CLUSTERRESOURCEGROUP \
-          --name $CLUSTERNAME \
-          --node-count 3 \
-          --generate-ssh-keys
-  displayName: 'Deploy AKS Cluster'
+      azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
+      scriptType: 'bash'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        az aks create \
+            --resource-group $CLUSTERRESOURCEGROUP \
+            --name $CLUSTERNAME \
+            --node-count 3 \
+            --generate-ssh-keys \
+            --os-sku AzureLinux
+  displayName: 'Deploy Azure Kubernetes Service (AKS) Cluster'
   condition: eq(variables.deployNewCluster, true)
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
+      echo $FCSCLIENTID
+      echo $FSCSECRET
       curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
       chmod 777 ./falcon-container-sensor-pull.sh
       export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
@@ -80,21 +80,19 @@ steps:
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
       az account set --subscription $AZURESUBSCRIPTION
       az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
       kubectl apply -f  https://raw.githubusercontent.com/crowdstrike/vulnapp/main/vulnerable.example.yaml
-      #sleep 3m
-      #watch -n 1 echo 'http://$(kubectl get service vulnerable-example-com  -o yaml -o=jsonpath="{.status.loadBalancer.ingress[0].ip}")/'
   displayName: 'Deploy CrowdStrike Vulnapp'
   condition: eq(variables.deployVulnapp, true)
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
@@ -117,20 +115,24 @@ steps:
       --set image.repository=$KACREGISTRY \
       --set image.tag=$LATEST_KAC_TAG \
       --set image.registryConfigJSON=$PULLTOKEN
-  displayName: 'Deploy CrowdStrike Kubernetes Admisson Controller to Azure Kubernetes Service Cluster'
+  displayName: 'Deploy CrowdStrike Kubernetes Admisson Controller (KAC) to Azure Kubernetes Service Cluster'
   condition: eq(variables.deployKAC, true)
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
+      echo $SENSORREGISTRY
+      echo $FCSCLIENTID
+      echo $FSCSECRET
       curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
       chmod 777 ./falcon-container-sensor-pull.sh
       export SENSOR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --list-tags)
       export LATEST_SENSOR_TAG=$(echo "$SENSOR" | jq -r '.tags | sort | last')
       export PULLTOKEN=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-sensor --get-pull-token)
+      echo $PULLTOKEN
       az account set --subscription $AZURESUBSCRIPTION
       az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
       helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
@@ -146,10 +148,12 @@ steps:
 
 - task: AzureCLI@2
   inputs:
-    azureSubscription: '00000000-0000-0000-0000-000000000000'
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
+      echo $FCSCLIENTID
+      echo $FSCSECRET
       curl -sSL -o falcon-container-sensor-pull.sh https://github.com/CrowdStrike/falcon-scripts/releases/latest/download/falcon-container-sensor-pull.sh
       chmod 777 ./falcon-container-sensor-pull.sh
       export IAR=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-imageanalyzer --list-tags)
@@ -168,7 +172,70 @@ steps:
       --set image.registryConfigJSON=$PULLTOKEN \
       --set image.repository=$IARREGISTRY --set image.tag=$LATEST_IAR_TAG \
       --set crowdstrikeConfig.cid=$FCSCID
-  displayName: 'Deploy Image Assessment at Runtime to Azure Kubernetes Service Cluster'
+  displayName: 'Deploy Image Assessment at Runtime (IAR) to Azure Kubernetes Service Cluster'
   condition: eq(variables.deployIAR,true)
 
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: "<AZURE_SUBSCRIPTION_ID>"
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      echo "Logging into Azure..."
+      az login --service-principal --username $(APP_ID) --password $(CLIENT_SECRET) --tenant $(TENANT_ID)
+      az account set --subscription $(SUBSCRIPTION_ID)
+  displayName: 'Deploy Self-hosted Registry Assessment (SHRA) - Azure Login'
+  condition: eq(variables.deploySHRA,true)
 
+- script: |
+    echo "Logging into Azure Container Registry..."
+    mv /home/vsts/.docker/config.json /home/vsts/.docker/backup_config.json
+    docker logout $(ACRREGISTRY)
+    docker login $(ACRREGISTRY) --username $(APP_ID) --password $(CLIENT_SECRET)
+  displayName: 'Deploy Self-hosted Registry Assessment (SHRA) - Docker Login to Azure Container Registry'
+  condition: eq(variables.deploySHRA,true)
+
+- script: |
+    echo "Fetching latest Falcon container SHRA images..."
+    export FALCON_CLIENT_ID="$(FCSCLIENTID)"
+    export FALCON_CLIENT_SECRET="$(FSCSECRET)"
+    export FJC=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-jobcontroller --list-tags)
+    export FRAE=$(bash ./falcon-container-sensor-pull.sh -u $FCSCLIENTID -s $FSCSECRET --type falcon-registryassessmentexecutor --list-tags)
+    ./falcon-container-sensor-pull.sh --client-id ${FALCON_CLIENT_ID} --client-secret ${FALCON_CLIENT_SECRET} --type falcon-jobcontroller
+    ./falcon-container-sensor-pull.sh --client-id ${FALCON_CLIENT_ID} --client-secret ${FALCON_CLIENT_SECRET} --type falcon-registryassessmentexecutor
+    export LATEST_FJC_TAG=$(echo "$FJC" | jq -r '.tags | sort | last')
+    export LATEST_FRAE_TAG=$(echo "$FRAE" | jq -r '.tags | sort | last')
+    echo $LATEST_FJC_TAG
+    echo $LATEST_FRAE_TAG
+    echo "Tagging and pushing FJC..."
+    docker tag "registry.crowdstrike.com/falcon-selfhostedregistryassessment/release/falcon-jobcontroller:$LATEST_FJC_TAG" "$ACRREGISTRY/falcon-jobcontroller:$LATEST_FJC_TAG"
+    docker push "$ACRREGISTRY/falcon-jobcontroller:$LATEST_FJC_TAG"
+    echo "Tagging and pushing FRAE..."
+    docker tag "registry.crowdstrike.com/falcon-selfhostedregistryassessment/release/falcon-registryassessmentexecutor:$LATEST_FRAE_TAG" "$ACRREGISTRY/falcon-registryassessmentexecutor:$LATEST_FRAE_TAG"
+    docker push "$ACRREGISTRY/falcon-registryassessmentexecutor:$LATEST_FRAE_TAG"
+  displayName: 'Deploy Self-hosted Registry Assessment (SHRA) - Pull, Tag, and Push SHRA Container Images'
+
+
+- task: AzureCLI@2
+  inputs: 
+    azureSubscription: '<AZURE_SUBSCRIPTION_ID>'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      # Azure AKS 
+      az account set --subscription $AZURESUBSCRIPTION
+      az aks get-credentials --resource-group $CLUSTERRESOURCEGROUP --name $CLUSTERNAME --overwrite-existing
+      # Create SHRA Namespace
+      kubectl create namespace falcon-self-hosted-registry-assessment
+      # Create PVC
+      # kubectl apply -f $(Build.SourcesDirectory)/aks/azure-pvc.yaml
+      # Create Secret 
+      kubectl create secret docker-registry acr-secret --docker-server=$DOCKER_USER --docker-username=DOCKER_USER --docker-password=DOCKER_PASSWORD --docker-email=DOCKER_EMAIL --namespace=falcon-self-hosted-registry-assessment
+      sleep 30
+      # Deploy SHRA Using Helm
+      helm version
+      helm repo add crowdstrike https://crowdstrike.github.io/falcon-helm
+      helm repo update
+      helm upgrade --install -f $(Build.SourcesDirectory)/aks/values_override.yaml --create-namespace --namespace falcon-self-hosted-registry-assessment --wait falcon-shra crowdstrike/falcon-self-hosted-registry-assessment
+  displayName: 'Deploy Self-hosted Registry Assessment (SHRA) to Azure Kubernetes Service Cluster'
+  condition: eq(variables.deploySHRA,true)
