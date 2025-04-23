@@ -55,4 +55,14 @@ This document provides details about the variables used in the CrowdStrike Falco
 |----------|-------------|
 | `DOCKER_USER` | Username for Docker registry authentication. |
 | `DOCKER_PASSWORD` | Password for Docker registry authentication. Keep this value secure. |
-| `DOCKER_EMAIL` | Email address associated with the Docker registry account. |
+| `DOCKER_EMAIL` | Email address associated with the Docker registry account.
+
+## Deployment
+
+When deploying the pipeline there are variables that can be set that allow for modular deployments
+
+![alt text](images/image.png)
+
+## Example
+
+![alt text](images/image-1.png)
