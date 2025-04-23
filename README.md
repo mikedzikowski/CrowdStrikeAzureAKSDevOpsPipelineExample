@@ -10,6 +10,12 @@ Pre-Reqs:
 
 The required Azure DevOps service connections, configuration and are not covered in this brief demo example. The pipeline assumes there is already a resource group deployed in Azure.
 
+## Notes
+
+- The registry paths may need to be updated based on your CrowdStrike region.
+- The Azure resource names should be changed to match your environment naming conventions.
+- Ensure the Azure Service Principal has appropriate permissions to create and manage AKS clusters and container registries
+
 ## Pipeline Variables Reference Guide
 
 This document provides details about the variables used in the CrowdStrike Falcon deployment pipeline.
@@ -50,10 +56,3 @@ This document provides details about the variables used in the CrowdStrike Falco
 | `DOCKER_USER` | Username for Docker registry authentication. |
 | `DOCKER_PASSWORD` | Password for Docker registry authentication. Keep this value secure. |
 | `DOCKER_EMAIL` | Email address associated with the Docker registry account. |
-
-## Notes
-
-- All sensitive values should be stored as secure pipeline variables or in a secure vault.
-- The registry paths may need to be updated based on your CrowdStrike region.
-- The Azure resource names should be changed to match your environment naming conventions.
-- Ensure the Azure Service Principal has appropriate permissions to create and manage AKS clusters and container registries
